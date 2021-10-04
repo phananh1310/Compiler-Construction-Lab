@@ -6,12 +6,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
+#include <ctype.h>
 
 #include "reader.h"
 #include "charcode.h"
 #include "token.h"
 #include "error.h"
 
+ 
 
 extern int lineNo;
 extern int colNo;
@@ -32,9 +35,12 @@ void skipBlank() {
 void skipComment() {
   while (1){
     readChar();
+    // -> error
     if (charCodes[currentChar]==CHAR_TIMES){
+      // If EOF -> error
       readChar();
       if (charCodes[currentChar]==CHAR_RPAR){
+        
         readChar();
         return;
       }
@@ -49,7 +55,7 @@ Token* readIdentKeyword(void) {
   Token* token = makeToken(TK_IDENT,lineNo,colNo);
 
   while(charCodes[currentChar]==CHAR_LETTER||charCodes[currentChar]==CHAR_DIGIT){
-    // add to string of token, the first one always CHAR_LETTER
+    // add to string of token if it's a letter / digit
     token->string[i]= currentChar;
     i+=1;
     readChar();
@@ -59,7 +65,8 @@ Token* readIdentKeyword(void) {
   token->string[i]='\0';
 
   if (i>MAX_IDENT_LEN){
-    // TO-DO ERROR HANDLING
+    token->tokenType = TK_NONE;
+    error(ERR_IDENTTOOLONG,token->lineNo,token->colNo);
   }
   else {
     //check keyword
@@ -73,45 +80,60 @@ Token* readIdentKeyword(void) {
 Token* readNumber(void) {
   int i=0;
   Token* token = makeToken(TK_NUMBER,lineNo,colNo);
+  
   while (charCodes[currentChar]==CHAR_DIGIT){
-    // add to string
+    // add to string if currentChar is a digit
     token->string[i]=currentChar;
     i+=1;
     readChar();
+    if (currentChar == EOF) break;
+    if (i>10){
+      error(ERR_NUMBERTOOLARGE,token->lineNo,token->colNo);
+    }
   }
-  // TO-DO ERROR WHEN NUMBER TO LARGE
   // end of string
   token->string[i]='\0';
   // string to value in Token
-  token->value = atoi(token->string);
+  int value = atoi(token->string);
+  if (value < INT_MAX) {
+    token->value=value;
+  }
+  else {
+      // ERROR WHEN NUMBER TO LARGE
+      token->tokenType = TK_NONE;
+      error(ERR_NUMBERTOOLARGE,token->lineNo,token->colNo);
+      token->value = -1;
+  }
   return token;
 }
 
 Token* readConstChar(void) {
+  int i=0;
   Token* token = makeToken(TK_CHAR,lineNo,colNo);
-
-  // NOTE: consider the case ''' and ''
-  // valid constant char: start with ' + char(first) + end with ' (second)
-  readChar(); // read first
-  int first = currentChar;
-
-  // TO-DO ERROR EOF
-  readChar(); // read second
-  int second = currentChar;
-
-  // Consider normal case
-  if (charCodes[second]==CHAR_SINGLEQUOTE){
-    token->string[0]=first;
-    token->string[1]='\0';
+  
+  readChar();
+  while (1){
+    
+    if (isprint(currentChar))
+    // add to string if printable
+    token->string[i]=currentChar; 
+    else 
+      error(ERR_INVALIDCHARCONSTANT,token->lineNo,token->colNo);
+    i+=1;
     readChar();
-    return token;
+    if ( currentChar ==EOF ||charCodes[currentChar]==CHAR_SINGLEQUOTE)
+      break;
   }
+  token->string[i] = '\0';
+  // now we have a string begin with ' and end with ' || string not complete due to end of file 
+
+  // if length > 1 so it's not a constant char
+  if (i>1|| currentChar== EOF){
+      token->tokenType = TK_NONE;
+      error(ERR_INVALIDCHARCONSTANT,token->lineNo,token->colNo);
+    }
+  readChar();
   return token;
-  /*
-  else {
-    error(ERR_INVALIDCHARCONSTANT, token->lineNo, token->colNo);
-}
-*/
 }
 
 Token* getToken(void) {
@@ -229,7 +251,6 @@ Token* getToken(void) {
     }
     else {
       token->tokenType=SB_LPAR;
-      readChar();
       return token;
     }
   case CHAR_RPAR:
