@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "reader.h"
 #include "charcode.h"
@@ -35,12 +36,15 @@ void skipBlank() {
 void skipComment() {
   while (1){
     readChar();
-    // -> error
+    if (currentChar == EOF)
+      error(ERR_ENDOFCOMMENT,lineNo,colNo);
+
     if (charCodes[currentChar]==CHAR_TIMES){
       // If EOF -> error
       readChar();
-      if (charCodes[currentChar]==CHAR_RPAR){
-        
+      if (currentChar == EOF)   
+          error(ERR_ENDOFCOMMENT,lineNo,colNo);
+      if (charCodes[currentChar]==CHAR_SLASH){     
         readChar();
         return;
       }
@@ -54,26 +58,40 @@ Token* readIdentKeyword(void) {
   int i=0;
   Token* token = makeToken(TK_IDENT,lineNo,colNo);
 
-  while(charCodes[currentChar]==CHAR_LETTER||charCodes[currentChar]==CHAR_DIGIT){
-    // add to string of token if it's a letter / digit
+  while(charCodes[currentChar]==CHAR_LETTER||charCodes[currentChar]==CHAR_UNDERSCORE||charCodes[currentChar]==CHAR_DIGIT){
+    // add to string of token if it's a letter / digit / underscore
     token->string[i]= currentChar;
     i+=1;
     readChar();
   }
 
-  //end of string
-  token->string[i]='\0';
+  //end of string but take only the first 15
+  if (i>15)
+    token->string[15]='\0';
+  else
+    token->string[i]='\0';
 
-  if (i>MAX_IDENT_LEN){
-    token->tokenType = TK_NONE;
-    error(ERR_IDENTTOOLONG,token->lineNo,token->colNo);
+  //check keyword
+  TokenType tokenType = checkKeyword(token->string);
+
+  int check = 0; // check = 1 means there is a letter that is not in UPPERCASE 
+  if (tokenType != TK_NONE){
+    // check if all keywords are in upper 
+    for (int i=0;i<strlen(token->string);i++)
+      if (!isupper(token->string[i])){
+        check=1;
+        break;
+      }    
+    if (check == 0)
+      token->tokenType=tokenType; // keyword
+    else {
+      // ident
+      // case insensitive
+      for (int i=0;i<strlen(token->string);i++){
+        token->string[i] = tolower(token->string[i]); 
+      } // all identifer are in lower 
+    }
   }
-  else {
-    //check keyword
-    TokenType tokenType = checkKeyword(token->string);
-    if (tokenType != TK_NONE)
-      token->tokenType=tokenType;
-  } 
   return token;
 }
 
@@ -88,7 +106,7 @@ Token* readNumber(void) {
     readChar();
     if (currentChar == EOF) break;
     if (i>10){
-      error(ERR_NUMBERTOOLARGE,token->lineNo,token->colNo);
+      error(ERR_NUMBERTOOLARGE,lineNo,colNo);
     }
   }
   // end of string
@@ -101,7 +119,7 @@ Token* readNumber(void) {
   else {
       // ERROR WHEN NUMBER TO LARGE
       token->tokenType = TK_NONE;
-      error(ERR_NUMBERTOOLARGE,token->lineNo,token->colNo);
+      error(ERR_NUMBERTOOLARGE,lineNo,colNo);
       token->value = -1;
   }
   return token;
@@ -118,7 +136,7 @@ Token* readConstChar(void) {
     // add to string if printable
     token->string[i]=currentChar; 
     else 
-      error(ERR_INVALIDCHARCONSTANT,token->lineNo,token->colNo);
+      error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
     i+=1;
     readChar();
     if ( currentChar ==EOF ||charCodes[currentChar]==CHAR_SINGLEQUOTE)
@@ -130,7 +148,7 @@ Token* readConstChar(void) {
   // if length > 1 so it's not a constant char
   if (i>1|| currentChar== EOF){
       token->tokenType = TK_NONE;
-      error(ERR_INVALIDCHARCONSTANT,token->lineNo,token->colNo);
+      error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
     }
   readChar();
   return token;
@@ -162,7 +180,13 @@ Token* getToken(void) {
   case CHAR_SLASH:
     token = makeToken(SB_SLASH, lineNo, colNo);
     readChar(); 
-    return token;
+    if (charCodes[currentChar]== CHAR_TIMES){
+      free(token);
+      skipComment();
+      return getToken();
+    }
+    else
+      return token;
   case CHAR_LT:
     token = makeToken(TK_NONE, lineNo,colNo);
     readChar();
@@ -208,15 +232,9 @@ Token* getToken(void) {
   case CHAR_PERIOD:
     token = makeToken(TK_NONE, lineNo,colNo);
     readChar();
-    if (charCodes[currentChar]==CHAR_RPAR){
-      token->tokenType=SB_RSEL;
-      readChar();
-      return token;
-    }
-    else {
-      token->tokenType=SB_PERIOD;
-      return token;
-    }
+    
+    token->tokenType=SB_PERIOD;
+    return token;
   case CHAR_COLON:
   token = makeToken(TK_NONE, lineNo,colNo);
     readChar();
@@ -238,23 +256,22 @@ Token* getToken(void) {
   case CHAR_LPAR:
     token = makeToken(TK_NONE,lineNo,colNo);
     readChar();
-    if (charCodes[currentChar]==CHAR_PERIOD){
-      token->tokenType=SB_LSEL;
-      readChar();
-      return token;
-    }
-    else if (charCodes[currentChar]==CHAR_TIMES){
-      // comment
-      free(token);
-      skipComment();
-      return getToken();
-    }
-    else {
-      token->tokenType=SB_LPAR;
-      return token;
-    }
+    
+    token->tokenType=SB_LPAR;
+    return token;
+    
   case CHAR_RPAR:
     token = makeToken(SB_RPAR, lineNo, colNo);
+    readChar(); 
+    return token;
+  case CHAR_UNDERSCORE: 
+    return readIdentKeyword();
+  case CHAR_LBRACKET:
+    token = makeToken(SB_LSEL, lineNo, colNo);
+    readChar(); 
+    return token;
+  case CHAR_RBRACKET:
+    token = makeToken(SB_RSEL, lineNo, colNo);
     readChar(); 
     return token;
   default:
