@@ -57,19 +57,20 @@ void skipComment() {
 Token* readIdentKeyword(void) {
   int i=0;
   Token* token = makeToken(TK_IDENT,lineNo,colNo);
-
+  char string[255]; // this will read a maximum 255 letters
   while(charCodes[currentChar]==CHAR_LETTER||charCodes[currentChar]==CHAR_UNDERSCORE||charCodes[currentChar]==CHAR_DIGIT){
     // add to string of token if it's a letter / digit / underscore
-    token->string[i]= currentChar;
+    string[i]= currentChar;
     i+=1;
     readChar();
   }
-
   //end of string but take only the first 15
   if (i>15)
-    token->string[15]='\0';
+    string[15]='\0';
   else
-    token->string[i]='\0';
+    string[i]='\0';
+  
+  strcpy(token->string,string); 
 
   //check keyword
   TokenType tokenType = checkKeyword(token->string);
@@ -131,25 +132,40 @@ Token* readConstChar(void) {
   
   readChar();
   while (1){
+    if (charCodes[currentChar]==CHAR_SINGLEQUOTE){
+      readChar();
+      // case 1: next is a another single quote, we have ''
+      if (charCodes[currentChar]==CHAR_SINGLEQUOTE){
+        token->string[i]=currentChar;
+      }
+      // case 2: next is not a single quote, break the loop
+      else{
+        break;
+      }
+    }
+
+    if (isprint(currentChar)){
+      // add to string if printable
+        token->string[i]=currentChar;
+      } 
+      else 
+        error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
     
-    if (isprint(currentChar))
-    // add to string if printable
-    token->string[i]=currentChar; 
-    else 
-      error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
-    i+=1;
-    readChar();
-    if ( currentChar ==EOF ||charCodes[currentChar]==CHAR_SINGLEQUOTE)
-      break;
+      i+=1;
+      readChar();
+      if ( currentChar ==EOF)
+        break;
+
   }
   token->string[i] = '\0';
+  if (i>255)
+    error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
   // now we have a string begin with ' and end with ' || string not complete due to end of file 
 
-  // if length > 1 so it's not a constant char
-  if (i>1|| currentChar== EOF){
-      token->tokenType = TK_NONE;
-      error(ERR_INVALIDCHARCONSTANT,lineNo,colNo);
-    }
+  // if length > 1 it's a token string
+  if (i>1){
+    token->tokenType=TK_STRING;
+  }
   readChar();
   return token;
 }
@@ -252,6 +268,7 @@ Token* getToken(void) {
     readChar(); 
     return token;
   case CHAR_SINGLEQUOTE:
+  
     return readConstChar();
   case CHAR_LPAR:
     token = makeToken(TK_NONE,lineNo,colNo);
@@ -295,6 +312,7 @@ void printToken(Token *token) {
   case TK_NUMBER: printf("TK_NUMBER(%s)\n", token->string); break;
   case TK_CHAR: printf("TK_CHAR(\'%s\')\n", token->string); break;
   case TK_EOF: printf("TK_EOF\n"); break;
+  case TK_STRING: printf("TK_STRING(\'%s\')\n",token->string); break;
 
   case KW_PROGRAM: printf("KW_PROGRAM\n"); break;
   case KW_CONST: printf("KW_CONST\n"); break;
