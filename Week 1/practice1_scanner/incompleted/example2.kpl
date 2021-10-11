@@ -3,13 +3,13 @@ PROGRAM Example2;
 	comand
 		line
 	*/
-   
-Var n: Integer;
-Var a[10]:Integer;
-Function F(n : Integer) : Integer;
-  Begin
+VAR 'a' */
+var n12345678909875335566: Integer;
+VaR a[10]:Integer;
+FUNCTION F(n : Integer) : Integer;
+  BEGIN
     If N != 0 Then F := 1 Else F := N * F (N - 1);
-  End;
+  END;
 
 BEGIN
   For N := 1 To 7 Do
