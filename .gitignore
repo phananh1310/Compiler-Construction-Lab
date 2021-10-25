@@ -1,0 +1,7 @@
+
+*.log
+Week 1/practice1_scanner/incompleted/.vscode/launch.json
+Week 1/practice1_scanner/incompleted/.vscode/settings.json
+Week 1/practice1_scanner/incompleted/.vscode/tasks.json
+*.o
+Week 1/practice1_scanner/incompleted/scanner.exe
