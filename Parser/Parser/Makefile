@@ -2,10 +2,10 @@ CFLAGS = -c -Wall
 CC = gcc
 LIBS =  -lm 
 
-all: scanner
+all: main
 
-scanner: scanner.o reader.o charcode.o token.o error.o
-	${CC} scanner.o reader.o charcode.o token.o error.o -o scanner
+main: scanner.o reader.o charcode.o token.o error.o parser.o main.o
+	${CC} scanner.o reader.o charcode.o token.o error.o parser.o main.o -o main
 
 reader.o: reader.c
 	${CC} ${CFLAGS} reader.c
@@ -21,6 +21,12 @@ token.o: token.c
 
 error.o: error.c
 	${CC} ${CFLAGS} error.c
+
+praser.o: praser.c
+	${CC} ${CFLAGS} praser.c
+
+main.o: main.c
+	${CC} ${CFLAGS} main.c
 
 clean:
 	rm -f *.o *~
