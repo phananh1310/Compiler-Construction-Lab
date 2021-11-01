@@ -126,8 +126,8 @@ void compileSubDecls(void) {
     else if(lookAhead->tokenType==KW_PROCEDURE){
       compileProcDecl();
     }
-    assert("Subtoutines parsed ....");
   }
+  assert("Subtoutines parsed ....");
 }
 
 void compileFuncDecl(void) {
@@ -154,6 +154,7 @@ void compileProcDecl(void) {
   assert("Procedure parsed ....");
 }
 
+// error handling using invalid const
 void compileUnsignedConstant(void) {
   if(lookAhead->tokenType==TK_NUMBER)
     eat(TK_NUMBER);
@@ -161,8 +162,11 @@ void compileUnsignedConstant(void) {
     eat(TK_IDENT);
   else if(lookAhead->tokenType==TK_CHAR)
     eat(TK_CHAR);
+  else
+    error(ERR_INVALIDCONSTANT,lookAhead->lineNo,lookAhead->colNo);
 }
 
+// error handling using invalid const
 void compileConstant(void) {
   if (lookAhead->tokenType==SB_MINUS){
     eat(SB_MINUS);
@@ -184,11 +188,14 @@ void compileConstant2(void) {
   if (lookAhead->tokenType==TK_IDENT){
     eat(TK_IDENT);
   }
-  else{
+  else if (lookAhead->tokenType==TK_NUMBER){
     eat(TK_NUMBER);
   }
+  else 
+    error(ERR_INVALIDCONSTANT,lookAhead->lineNo,lookAhead->colNo);
 }
 
+// error handling using invalid type
 void compileType(void) {
   switch(lookAhead->tokenType){
     case KW_INTEGER:
@@ -208,14 +215,19 @@ void compileType(void) {
       eat(KW_OF);
       compileType();
       break;
+    default:
+       error(ERR_INVALIDTYPE,lookAhead->lineNo,lookAhead->colNo);
   }
 }
 
+// error handling using invalid basic type
 void compileBasicType(void) {
   if (lookAhead->tokenType==KW_INTEGER)
     eat(KW_INTEGER);
   else if (lookAhead->tokenType==KW_CHAR)
     eat(KW_CHAR);
+  else
+    error(ERR_INVALIDBASICTYPE,lookAhead->lineNo,lookAhead->colNo);
 }
 
 void compileParams(void) {
@@ -236,13 +248,17 @@ void compileParams2(void) {
 }
 
 void compileParam(void) {
-  if(lookAhead->tokenType==KW_VAR){
+  if (lookAhead->tokenType==KW_VAR||lookAhead->tokenType==TK_IDENT){ 
+    if(lookAhead->tokenType==KW_VAR){
     eat(KW_VAR);
+    }
+    eat(TK_IDENT);
+    eat(SB_COLON);
+    compileBasicType();
   }
-  eat(TK_IDENT);
-  eat(SB_COLON);
-  compileBasicType();
-}
+  else 
+    error(ERR_INVALIDPARAM,lookAhead->lineNo,lookAhead->colNo);
+} 
 
 void compileStatements(void) {
   compileStatement();
@@ -353,12 +369,17 @@ void compileForSt(void) {
   assert("For statement parsed ....");
 }
 
+// invalid argument when there is no ) or empty inside ()
 void compileArguments(void) {
   if (lookAhead->tokenType==SB_LPAR){
     eat(SB_LPAR);
     compileExpression();
     compileArguments2();
-    eat(SB_RPAR);
+    if (lookAhead->tokenType==SB_RPAR){
+      eat(SB_RPAR);
+    }
+    else
+      error(ERR_INVALIDARGUMENTS,lookAhead->lineNo,lookAhead->colNo);
   }
 }
 
@@ -375,6 +396,7 @@ void compileCondition(void) {
   compileCondition2();
 }
 
+// invalid comparator happened here
 void compileCondition2(void) {
   switch(lookAhead->tokenType){
     case SB_EQ:
@@ -395,6 +417,8 @@ void compileCondition2(void) {
     case SB_GT:
       eat(SB_GT);
       break;
+    default:
+     error(ERR_INVALIDCOMPARATOR,lookAhead->lineNo,lookAhead->colNo);
   }
   compileExpression();
 }
@@ -436,18 +460,43 @@ void compileTerm(void) {
 }
 
 void compileTerm2(void) {
-  if (lookAhead->tokenType==SB_TIMES){
-    eat(SB_TIMES);
-    compileFactor();
-    compileTerm2();
-  }
-  else if (lookAhead->tokenType==SB_SLASH){
-    eat(SB_SLASH);
-    compileFactor();
-    compileTerm2();
+  switch(lookAhead->tokenType){
+    case SB_TIMES:
+      eat(SB_TIMES);
+      compileFactor();
+      compileTerm2();
+      break;
+    case SB_SLASH: 
+      eat(SB_SLASH);
+      compileFactor();
+      compileTerm2();
+      break;
+    // check follow a term (by going to where compileterm is called and find out what's after a term if term is end)
+    // term is in the end of a expression -> see when expression called and what 's after an expression
+    // example after compile expression is con dition / argument ,...
+    case SB_PLUS: break;
+    case SB_MINUS: break;
+    case KW_TO: break;
+    case KW_DO: break;
+    case SB_RPAR: break;
+    case SB_EQ: break;
+    case SB_NEQ: break;
+    case SB_LE: break;
+    case SB_LT: break;
+    case SB_GE: break;
+    case SB_GT: break;
+    case SB_RSEL: break;
+    case SB_SEMICOLON: break;
+    case KW_ELSE: break;
+    case KW_END: break;
+    case KW_THEN: break;
+    case SB_COMMA: break;
+    default:
+      error(ERR_INVALIDTERM,lookAhead->colNo,lookAhead->lineNo);
   }
 }
 
+// invalid factor happend here
 void compileFactor(void) {
   switch(lookAhead->tokenType){
     case TK_NUMBER:
@@ -468,6 +517,8 @@ void compileFactor(void) {
       compileExpression();
       eat(SB_RPAR);
       break;
+    default:
+      error(ERR_INVALIDFACTOR,lookAhead->lineNo,lookAhead->colNo);
   }
 }
 
