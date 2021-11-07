@@ -69,13 +69,50 @@ void compileBlock3(void) {
   } 
   else compileBlock4();
 }
+/*
+void compileSubDecls(void) {
+  assert("Parsing subtoutines ....");
+  while (lookAhead->tokenType==KW_FUNCTION||lookAhead->tokenType==KW_PROCEDURE){
+    if (lookAhead->tokenType==KW_FUNCTION){
+      compileFuncDecl();
+    }
+    else if(lookAhead->tokenType==KW_PROCEDURE){
+      compileProcDecl();
+    }
+  }
+  assert("Subtoutines parsed ....");
+}
+*/
 
+// block 4 = funDecls block 5 || block 5
 void compileBlock4(void) {
-  compileSubDecls();
+  if (lookAhead->tokenType==KW_FUNCTION)
+    compileFuncDecls();
   compileBlock5();
 }
 
-void compileBlock5(void) {
+// block 5 = prodecls block 6 || block 6
+void compileBlock5(void){
+  if (lookAhead->tokenType==KW_PROCEDURE)
+    compileProcDecls();
+  compileBlock6();
+}
+
+void compileFuncDecls(void) {
+  assert("Parsing FunctionDecls ....");
+  while (lookAhead->tokenType==KW_FUNCTION)
+      compileFuncDecl();
+  assert("FunctionDecls parsed ....");
+}
+
+void compileProcDecls(void) {
+  assert("Parsing ProcedureDecls ....");
+  while (lookAhead->tokenType==KW_PROCEDURE)
+      compileProcDecl();
+  assert("ProcedureDecls parsed ....");
+}
+
+void compileBlock6(void) {
   eat(KW_BEGIN);
   compileStatements();
   eat(KW_END);
@@ -117,18 +154,7 @@ void compileVarDecl(void) {
   eat(SB_SEMICOLON);
 }
 
-void compileSubDecls(void) {
-  assert("Parsing subtoutines ....");
-  while (lookAhead->tokenType==KW_FUNCTION||lookAhead->tokenType==KW_PROCEDURE){
-    if (lookAhead->tokenType==KW_FUNCTION){
-      compileFuncDecl();
-    }
-    else if(lookAhead->tokenType==KW_PROCEDURE){
-      compileProcDecl();
-    }
-  }
-  assert("Subtoutines parsed ....");
-}
+
 
 void compileFuncDecl(void) {
   assert("Parsing a function ....");

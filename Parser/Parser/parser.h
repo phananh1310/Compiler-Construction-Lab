@@ -54,6 +54,10 @@ void compileTerm(void);
 void compileTerm2(void);
 void compileFactor(void);
 void compileIndexes(void);
+// add funcdecls and procdecls and block6
+void compileFuncDecls(void);
+void compileProcDecls(void);
+void compileBlock6(void);
 
 int compile(char *fileName);
 
