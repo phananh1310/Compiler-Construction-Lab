@@ -1,0 +1,15 @@
+Program Ex2;
+   
+Var num1 : Integer;
+    num2 : Integer;
+
+Function SUM(num1 : Integer; num2 : Integer) : Integer;
+  Begin
+    SUM := num1 + num2;
+  End;
+
+Begin
+  num1 := 1;
+  num2 := 2;
+  Call WriteI( SUM(num1,num2));
+End.

@@ -1,0 +1,29 @@
+Program Example5; 
+
+Var p : Integer; (* The first p number *)
+
+    n : Integer;  
+    s : Integer; (* Sum *)
+    i :	Integer; 
+
+Function F(n : Integer) : Integer;
+  Begin
+    F := N * N;
+  End;
+
+Procedure Calculate(s: Integer; b :Integer);
+  Begin
+    for i := 1 to p do
+      begin
+        s := s + F(i);  
+      end
+  end;  
+
+Begin
+  Call Readi(i); (*read a number i*)
+  Call WriteI(F(i)); (*Square*)
+  
+  s := 0;
+  Call Readi(p);  (*read p: the first p number*)
+  Call Calculate(s); (* sum of square of the first p number*)
+End. 

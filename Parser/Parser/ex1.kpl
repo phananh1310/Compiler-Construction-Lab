@@ -1,0 +1,35 @@
+PROGRAM  EX1; (* ARRAY IN THE FILE IN THE FORMAT OF A NUMBER (L) AND SEQUENCE OF ARRAY'S NUMBER *)
+TYPE INT = INTEGER;
+VAR  A : ARRAY(. 1000 .) OF INT; (* ASSUME MAX L*L = 1000 *)
+     L : INTEGER; (* LENGTH OF ARRAY *)
+
+PROCEDURE INPUT;
+VAR I : INTEGER;
+BEGIN
+  L := READI;
+  FOR I := 1 TO L*L DO (* ASSUME INDEX STARTING FROM 1 *)
+	  A(.I.) := READI;
+END;
+
+FUNCTION ISLOWER : INTEGER; (* CHECK IF ALL OF THE UPPER TRIANGULAR ARE 0 *)
+VAR I : INTEGER;
+    J : INTEGER;
+    INDEX : INTEGER; (* MAPPING FROM 2D ARRAY TO 1D ARRAY*)
+    (* I found that I can only declare 1D array since in your KPL GRAMMAR slide it said: 33) Type ::= KW_ARRAY SB_LSEL TK_NUMBER SB_RSEL KW_OF Type *)
+    (* but in the compile index part can handle multiple indexing: 93) Indexes ::= SB_LSEL Expression SB_RSEL Indexes *)
+BEGIN
+  FOR I := 1 TO L-1 DO
+    BEGIN
+      FOR J := 2+TMP TO L DO
+	      BEGIN
+          INDEX := (I-1)*L + J; 
+	        IF A(. INDEX .) != 0 THEN ISLOWER:= 0; (* FALSE *) 
+	      END;
+      END;
+  ISLOWER := 1; (* TRUE *)
+END;
+
+BEGIN
+  CALL INPUT;
+  CALL WRITEI(ISLOWER);
+END.  

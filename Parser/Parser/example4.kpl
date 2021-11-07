@@ -45,5 +45,5 @@ BEGIN
        CALL OUTPUT;
        CALL WRITEI(SUM);
        CH := READC;
-     END
+     END;
 END.  (* Example 4 *)
