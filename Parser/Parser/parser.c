@@ -238,15 +238,20 @@ void compileParams(void) {
     eat(SB_RPAR);
   }
 }
-
+// error invalid para when between 2 paras is not a semicolon
 void compileParams2(void) {
-  while(lookAhead->tokenType==SB_SEMICOLON){
+  if (lookAhead->tokenType==SB_SEMICOLON){
     eat(SB_SEMICOLON);
     compileParam();
     compileParams2();
   }
+  // follow
+  else if (lookAhead->tokenType==SB_RPAR){
+  }
+  else 
+    error(ERR_INVALIDPARAM,lookAhead->lineNo,lookAhead->colNo);
 }
-
+// error invalid para when no kw var or ident in a ()
 void compileParam(void) {
   if (lookAhead->tokenType==KW_VAR||lookAhead->tokenType==TK_IDENT){ 
     if(lookAhead->tokenType==KW_VAR){
@@ -265,12 +270,17 @@ void compileStatements(void) {
   compileStatements2();
 }
 
+// invalid statement happend here
 void compileStatements2(void) {
-  while(lookAhead->tokenType==SB_SEMICOLON){
+  if (lookAhead->tokenType==SB_SEMICOLON){
     eat(SB_SEMICOLON);
     compileStatement();
     compileStatements2();
   }
+  // check follow
+  else if (lookAhead->tokenType==KW_END);
+  else error(ERR_INVALIDSTATEMENT,lookAhead->lineNo,lookAhead->colNo);
+
 }
 
 void compileStatement(void) {
@@ -369,26 +379,56 @@ void compileForSt(void) {
   assert("For statement parsed ....");
 }
 
-// invalid argument when there is no ) or empty inside ()
+// invalid argument 
 void compileArguments(void) {
-  if (lookAhead->tokenType==SB_LPAR){
-    eat(SB_LPAR);
-    compileExpression();
-    compileArguments2();
-    if (lookAhead->tokenType==SB_RPAR){
-      eat(SB_RPAR);
-    }
-    else
+  switch (lookAhead->tokenType){
+    case SB_LPAR:
+      eat(SB_LPAR);
+      compileExpression();
+      compileArguments2();
+      if (lookAhead->tokenType==SB_RPAR){
+        eat(SB_RPAR);
+      } else {
+        error(ERR_INVALIDARGUMENTS,lookAhead->lineNo,lookAhead->colNo); // error too  mayy arguments
+      }
+      break;
+    // check follow
+    case KW_ELSE: break;
+    case SB_SEMICOLON: break;
+    case KW_END: break;
+    case SB_TIMES: break;
+    case SB_SLASH: break;
+    case SB_PLUS: break;
+    case SB_MINUS: break;
+    case KW_TO: break;
+    case KW_DO: break;
+    case SB_RPAR: break;
+    case SB_EQ: break;
+    case SB_NEQ: break;
+    case SB_LE: break;
+    case SB_LT: break;
+    case SB_GE: break;
+    case SB_GT: break;
+    case SB_RSEL: break;
+    case KW_THEN: break;
+    case SB_COMMA: break;
+    default:
       error(ERR_INVALIDARGUMENTS,lookAhead->lineNo,lookAhead->colNo);
   }
 }
 
+// invalid argument happens here
 void compileArguments2(void) {
-  while (lookAhead->tokenType==SB_COMMA){
+  if (lookAhead->tokenType==SB_COMMA){
     eat(SB_COMMA);
     compileExpression();
     compileArguments2();
   }
+  // follow
+  else if (lookAhead->tokenType==SB_RPAR){
+  }
+  else
+    error(ERR_INVALIDARGUMENTS,lookAhead->lineNo,lookAhead->colNo);
 }
 
 void compileCondition(void) {
@@ -459,6 +499,7 @@ void compileTerm(void) {
   compileTerm2();
 }
 
+// invalid term
 void compileTerm2(void) {
   switch(lookAhead->tokenType){
     case SB_TIMES:
@@ -471,9 +512,9 @@ void compileTerm2(void) {
       compileFactor();
       compileTerm2();
       break;
-    // check follow a term (by going to where compileterm is called and find out what's after a term if term is end)
+    // check follow a term since there is a terminate symbol (by going to where compileterm is called and find out what's after a term if term is end)
     // term is in the end of a expression -> see when expression called and what 's after an expression
-    // example after compile expression is con dition / argument ,...
+    // example after compile expression is condition / argument ,...
     case SB_PLUS: break;
     case SB_MINUS: break;
     case KW_TO: break;
@@ -496,7 +537,7 @@ void compileTerm2(void) {
   }
 }
 
-// invalid factor happend here
+// invalid factor when there is no factor
 void compileFactor(void) {
   switch(lookAhead->tokenType){
     case TK_NUMBER:
