@@ -53,13 +53,10 @@ int main() {
 
     obj = createParameterObject("p2", PARAM_REFERENCE, symtab->currentScope->owner);
     obj->paramAttrs->type = makeCharType();
-    declareObject(obj);
-
+    declareObject(obj); 
     exitBlock();
-
   obj = createProcedureObject("p");
   declareObject(obj);
-  
     enterBlock(obj->procAttrs->scope);
  
     obj = createParameterObject("v1", PARAM_VALUE, symtab->currentScope->owner);
@@ -91,9 +88,8 @@ int main() {
     declareObject(obj);
 
     exitBlock();
-
-
   exitBlock();
+
   printObject(symtab->program,0);
   cleanSymTab();
     
